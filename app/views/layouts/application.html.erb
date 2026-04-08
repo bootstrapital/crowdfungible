@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "CrowdFungible" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <%= stylesheet_link_tag :application, "data-turbo-track": "reload" %>
+  </head>
+
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <div>
+          <%= link_to "CrowdFungible", root_path, class: "site-brand" %>
+          <p class="site-tagline">Paper-trading workflow demo on Rubot.</p>
+        </div>
+        <nav class="site-nav">
+          <%= link_to "Submit Trade", new_trade_request_path %>
+          <%= link_to "History", trade_requests_path %>
+          <%= link_to "Rubot Admin", "/rubot/admin", target: "_blank", rel: "noreferrer" %>
+        </nav>
+      </header>
+
+      <% flash.each do |type, message| %>
+        <div class="flash flash--<%= type %>"><%= message %></div>
+      <% end %>
+
+      <main>
+        <%= yield %>
+      </main>
+    </div>
+  </body>
+</html>

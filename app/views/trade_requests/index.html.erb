@@ -1,0 +1,32 @@
+<% content_for :title, "Trade Request History" %>
+
+<section class="history-table-wrap">
+  <p class="eyebrow">Recent Requests</p>
+  <div class="result-actions">
+    <%= link_to "Submit Another Request", new_trade_request_path, class: "button" %>
+    <%= link_to "Rubot Admin", "/rubot/admin", class: "button button--secondary", target: "_blank", rel: "noreferrer" %>
+  </div>
+
+  <table class="history-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Created</th>
+        <th>Request</th>
+        <th>Status</th>
+        <th>Disposition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @trade_requests.each do |trade_request| %>
+        <tr>
+          <td><%= link_to "##{trade_request.id}", trade_request_path(trade_request) %></td>
+          <td><%= l(trade_request.created_at, format: :short) %></td>
+          <td><%= trade_request.request_text.presence || "#{trade_request.side} #{trade_request.symbol}" %></td>
+          <td><span class="<%= trade_request_status_class(trade_request.status) %>"><%= trade_request_status_label(trade_request.status) %></span></td>
+          <td><%= trade_request.final_output&.dig("final_disposition") || trade_request.final_output&.dig(:final_disposition) || "n/a" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>

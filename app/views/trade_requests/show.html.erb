@@ -1,0 +1,48 @@
+<% content_for :title, "Trade Request ##{@trade_request.id}" %>
+
+<section class="panel">
+  <p class="eyebrow">Trade Outcome</p>
+  <div class="result-actions">
+    <span class="<%= trade_request_status_class(@trade_request.status) %>"><%= trade_request_status_label(@trade_request.status) %></span>
+    <% if @trade_request.rubot_admin_url.present? %>
+      <%= link_to "Open Rubot Run", @trade_request.rubot_admin_url, class: "button button--secondary", target: "_blank", rel: "noreferrer" %>
+    <% end %>
+    <% if @trade_request.status == "queued_for_approval" %>
+      <%= link_to "Open Approval Inbox", "/rubot/admin/approvals", class: "button button--secondary", target: "_blank", rel: "noreferrer" %>
+    <% end %>
+  </div>
+
+  <p><strong>Submitted request:</strong> <%= @trade_request.request_text.presence || "Structured request only" %></p>
+  <% if @trade_request.recommendation.present? %>
+    <p><strong>System explanation:</strong> <%= @trade_request.recommendation["user_facing_explanation"] || @trade_request.recommendation[:user_facing_explanation] %></p>
+  <% elsif @trade_request.error_message.present? %>
+    <p><strong>Error:</strong> <%= @trade_request.error_message %></p>
+  <% end %>
+</section>
+
+<div class="result-grid">
+  <section>
+    <h2>Normalized Request</h2>
+    <pre class="json-block"><%= pretty_data(@trade_request.normalized_request) %></pre>
+  </section>
+
+  <section>
+    <h2>Policy Result</h2>
+    <pre class="json-block"><%= pretty_data(@trade_request.policy_result) %></pre>
+  </section>
+
+  <section>
+    <h2>Recommendation</h2>
+    <pre class="json-block"><%= pretty_data(@trade_request.recommendation) %></pre>
+  </section>
+
+  <section>
+    <h2>Execution / Approval</h2>
+    <div class="stack">
+      <pre class="json-block"><%= pretty_data(@trade_request.execution_result.presence || @trade_request.approval_result) %></pre>
+      <% if @trade_request.quote_summary.present? || @trade_request.account_summary.present? %>
+        <pre class="json-block"><%= pretty_data({ quote: @trade_request.quote_summary, account: @trade_request.account_summary }) %></pre>
+      <% end %>
+    </div>
+  </section>
+</div>

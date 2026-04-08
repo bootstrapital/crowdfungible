@@ -1,0 +1,8 @@
+provider: openai
+default_model: gpt-4o-mini
+queues:
+  run: rubot_runs
+  step: rubot_steps
+  resume: rubot_resumes
+features:
+  admin_live_updates: true
