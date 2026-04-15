@@ -1,0 +1,51 @@
+default: &default
+  auto_approval_notional_threshold: 20_000
+  concentration_threshold: 0.25
+  low_buying_power_threshold: 1_000
+  symbol_allowlist:
+    - AAPL
+    - AMZN
+    - GOOGL
+    - META
+    - MSFT
+    - NVDA
+    - TSLA
+    - V
+    - LNG
+    - MU
+  company_symbol_aliases:
+    AAPL:
+      - apple
+      - apple inc
+    AMZN:
+      - amazon
+      - amazon com
+    GOOGL:
+      - alphabet
+      - google
+    META:
+      - meta
+      - facebook
+    MSFT:
+      - microsoft
+    NVDA:
+      - nvidia
+    TSLA:
+      - tesla
+    V:
+      - visa
+    LNG:
+      - cheniere
+      - cheniere energy
+    MU:
+      - micron
+      - micron technology
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default

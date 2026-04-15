@@ -36,10 +36,13 @@ RUN apt-get update -qq && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Install application gems
-COPY vendor/* ./vendor/
 COPY Gemfile Gemfile.lock ./
+COPY vendor/cache ./vendor/cache
 
-RUN bundle install && \
+RUN gem install vendor/cache/bundler-2.5.3.gem --no-document && \
+    bundle config set deployment 'true' && \
+    bundle config set without 'development test' && \
+    bundle install --local && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
 
 # Copy application code
@@ -57,6 +60,10 @@ FROM base
 # Run and own only the runtime files as a non-root user for security
 RUN groupadd --system --gid 1000 rails && \
     useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash
+
+# Create /data directory and ensure it is owned by the rails user
+RUN mkdir -p /data && chown -R rails:rails /data
+
 USER 1000:1000
 
 # Copy built artifacts: gems, application

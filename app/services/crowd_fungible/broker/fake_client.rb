@@ -10,7 +10,10 @@ module CrowdFungible
         "META" => 503.33,
         "MSFT" => 428.76,
         "NVDA" => 118.40,
-        "TSLA" => 171.28
+        "TSLA" => 171.28,
+        "V" => 273.61,
+        "LNG" => 166.84,
+        "MU" => 126.57
       }.freeze
 
       def account

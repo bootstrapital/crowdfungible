@@ -14,6 +14,7 @@ module CrowdFungible
           float :notional_usd, required: false
           string :order_type, required: false
           array :ambiguity_flags, of: :string, required: false
+          string :requested_company_name, required: false
         end
         hash :account do
           float :buying_power
@@ -64,11 +65,22 @@ module CrowdFungible
         symbol = normalized_request[:symbol].to_s.upcase
         order_type = normalized_request[:order_type].presence || "market"
         ambiguity_flags = Array(normalized_request[:ambiguity_flags])
+        requested_company_name = normalized_request[:requested_company_name].to_s
 
         if symbol.present? && !CrowdFungible.symbol_allowlist.include?(symbol)
           hard_rejection = true
           flags << "unsupported_symbol"
           reasons << "#{symbol} is outside the demo symbol allowlist."
+        end
+
+        if ambiguity_flags.include?("unsupported_company_name")
+          hard_rejection = true
+          flags << "unsupported_company_name"
+          reasons << if requested_company_name.present?
+                       "#{requested_company_name} is outside the demo company allowlist."
+                     else
+                       "The requested company is outside the demo company allowlist."
+                     end
         end
 
         if quote[:available] == false && symbol.present? && CrowdFungible.symbol_allowlist.include?(symbol)
@@ -95,7 +107,7 @@ module CrowdFungible
           end
         end
 
-        if ambiguity_flags.any?
+        if ambiguity_flags.any? && !hard_rejection
           requires_human_approval = true
           flags.concat(ambiguity_flags)
           reasons << "The request includes ambiguous or conditional language."

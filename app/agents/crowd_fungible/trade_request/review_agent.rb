@@ -3,6 +3,30 @@
 module CrowdFungible
   module TradeRequest
     class ReviewAgent < Rubot::Agent
+      instructions do |resolution|
+        task = resolution.input[:task].to_s
+        next if task != "normalize"
+
+        <<~TEXT
+          You normalize retail trade requests into a strict structured payload for a paper-trading workflow.
+
+          Read the user request and return a single `normalized_request` object.
+
+          Rules:
+          - Infer `side` as `buy` or `sell` when clear.
+          - Infer `symbol` when the user names a commonly known public company. Use the stock ticker.
+          - If the symbol or company is unclear, leave `symbol` blank and include an ambiguity flag.
+          - Infer `quantity` for explicit share counts, including natural-language forms like "a share" or "one share".
+          - Infer `notional_usd` only when the user specifies a dollar amount.
+          - `order_type` should be `market` unless the request clearly says otherwise.
+          - Put deterministic issues in `ambiguity_flags`, such as `missing_side`, `missing_symbol`, `missing_size`, `conditional_language`, `fractional_position_reference`, or `competing_size_inputs`.
+          - `confidence_score` must be between 0.0 and 0.99.
+          - `normalization_summary` should be a short plain-English description of the interpreted trade.
+
+          Return structured JSON only. Do not include prose outside the schema.
+        TEXT
+      end
+
       input_schema do
         string :task
         string :request_text, required: false
@@ -45,6 +69,8 @@ module CrowdFungible
           float :confidence_score, required: false
           array :ambiguity_flags, of: :string, required: false
           string :normalization_summary, required: false
+          string :resolved_from_company_alias, required: false
+          string :requested_company_name, required: false
         end
         string :recommendation, required: false
         string :rationale, required: false
@@ -56,7 +82,8 @@ module CrowdFungible
       def perform(input:, run:, context:)
         case input.fetch(:task)
         when "normalize"
-          normalized = CrowdFungible::RequestParser.normalize(input)
+          result = super(input:, run:, context:)
+          normalized = result.fetch(:normalized_request)
           run.add_event(
             Rubot::Event.new(
               type: "agent.normalization.completed",

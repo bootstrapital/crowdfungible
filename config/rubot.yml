@@ -1,5 +1,5 @@
-provider: openai
-default_model: gpt-4o-mini
+provider: gemini
+default_model: gemini-3-flash-preview
 queues:
   run: rubot_runs
   step: rubot_steps

@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_NAME="${FLY_APP:-rubot-demo}"
+BUNDLER_VERSION="${BUNDLER_VERSION:-2.5.3}"
+REQUIRED_CACHED_GEMS=(
+  "sqlite3-2.9.2-x86_64-linux-gnu.gem"
+  "nokogiri-1.19.2-x86_64-linux-gnu.gem"
+)
+
+cd "$(dirname "$0")/.."
+
+echo "Using Bundler ${BUNDLER_VERSION}"
+echo "Preparing vendor/cache for Fly deploy"
+
+export BUNDLER_VERSION
+
+ruby -e '
+  path = "Gemfile.lock"
+  contents = File.read(path)
+  replacement = "BUNDLED WITH\n   " + ENV.fetch("BUNDLER_VERSION") + "\n"
+
+  unless contents.sub!(/BUNDLED WITH\n(?: {3}.*\n)+\z/, replacement)
+    abort("Could not rewrite BUNDLED WITH section in #{path}")
+  end
+
+  File.write(path, contents)
+'
+bundle _"${BUNDLER_VERSION}"_ lock --add-platform x86_64-linux-gnu
+bundle _"${BUNDLER_VERSION}"_ config set cache_all true
+bundle _"${BUNDLER_VERSION}"_ config set cache_all_platforms true
+bundle _"${BUNDLER_VERSION}"_ package --all-platforms
+
+for gem_file in "${REQUIRED_CACHED_GEMS[@]}"; do
+  if [[ ! -f "vendor/cache/${gem_file}" ]]; then
+    echo "Missing required cached gem: vendor/cache/${gem_file}" >&2
+    echo "Re-run packaging or fetch the Linux platform gem into vendor/cache before deploying." >&2
+    exit 1
+  fi
+done
+
+echo "Deploying ${APP_NAME} to Fly"
+exec fly deploy --remote-only --app "${APP_NAME}" "$@"

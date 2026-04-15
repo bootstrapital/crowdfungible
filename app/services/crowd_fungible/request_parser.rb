@@ -6,6 +6,7 @@ module CrowdFungible
     SELL_PATTERNS = /\b(sell|trim|exit|short)\b/i
     NOTIONAL_PATTERN = /\$(\d+(?:\.\d+)?)/i
     SHARES_PATTERN = /(\d+(?:\.\d+)?)\s+shares?/i
+    SINGLE_SHARE_PATTERN = /\b(?:a|an|one)\s+share\b/i
     SYMBOL_PATTERN = /\b([A-Z]{1,5})\b/
 
     class << self
@@ -32,6 +33,21 @@ module CrowdFungible
         }
       end
 
+      def finalize(normalized_request)
+        side = normalized_request[:side]
+        symbol = normalized_request[:symbol]
+        quantity = normalized_request[:quantity]
+        notional_usd = normalized_request[:notional_usd]
+        order_type = normalized_request[:order_type].presence || "market"
+        ambiguity_flags = Array(normalized_request[:ambiguity_flags])
+
+        normalized_request.merge(
+          order_type: order_type,
+          confidence_score: compute_confidence(side:, symbol:, quantity:, notional_usd:, ambiguity_flags:),
+          normalization_summary: summary_for(side:, symbol:, quantity:, notional_usd:, order_type:, ambiguity_flags:)
+        )
+      end
+
       private
 
       def explicit_or_inferred_side(explicit_side, text)
@@ -53,7 +69,10 @@ module CrowdFungible
         return explicit_quantity.to_f if explicit_quantity.present?
 
         match = text.match(SHARES_PATTERN)
-        match && match[1].to_f
+        return match[1].to_f if match
+        return 1.0 if text.match?(SINGLE_SHARE_PATTERN)
+
+        nil
       end
 
       def explicit_or_inferred_notional(explicit_notional, text)

@@ -13,7 +13,8 @@ class TradeRequestsController < ApplicationController
   end
 
   def create
-    @trade_request = TradeRequest.create!(trade_request_attributes)
+    attrs = trade_request_attributes
+    @trade_request = TradeRequest.create!(attrs)
 
     run = CrowdFungible::TradeRequest::Operation.launch(
       payload: workflow_payload(@trade_request),
@@ -25,7 +26,7 @@ class TradeRequestsController < ApplicationController
     CrowdFungible::TradeRequestSync.new(@trade_request).call(run: run)
     redirect_to @trade_request
   rescue StandardError => e
-    @trade_request ||= TradeRequest.new(trade_request_attributes)
+    @trade_request = TradeRequest.new(attrs || trade_request_attributes)
     @trade_request.status = "failed"
     @trade_request.error_message = e.message
     flash.now[:alert] = e.message

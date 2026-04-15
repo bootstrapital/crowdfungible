@@ -3,12 +3,14 @@
 module CrowdFungible
   module Broker
     class AlpacaClient
+      TRADING_API_VERSION_PREFIX = "/v2".freeze
+
       def initialize(connection: nil)
         @connection = connection
       end
 
       def account
-        response = request(:get, trading_url("/v2/account"))
+        response = request(:get, trading_url("/account"))
         body = response.body
 
         {
@@ -22,7 +24,7 @@ module CrowdFungible
       end
 
       def positions
-        response = request(:get, trading_url("/v2/positions"))
+        response = request(:get, trading_url("/positions"))
 
         Array(response.body).map do |position|
           {
@@ -36,7 +38,7 @@ module CrowdFungible
       end
 
       def open_orders
-        response = request(:get, trading_url("/v2/orders"), params: { status: "open", direction: "desc" })
+        response = request(:get, trading_url("/orders"), params: { status: "open", direction: "desc" })
 
         Array(response.body).map do |order|
           {
@@ -76,10 +78,10 @@ module CrowdFungible
           type: order.fetch(:order_type),
           time_in_force: "day"
         }
-        payload[:qty] = order[:quantity] if order[:quantity].present?
-        payload[:notional] = order[:notional_usd] if order[:notional_usd].present?
+        payload[:qty] = order[:quantity].to_s if order[:quantity].present?
+        payload[:notional] = order[:notional_usd].to_s if order[:notional_usd].present?
 
-        response = request(:post, trading_url("/v2/orders"), json: payload)
+        response = request(:post, trading_url("/orders"), json: payload)
         body = response.body
 
         {
@@ -121,17 +123,31 @@ module CrowdFungible
       end
 
       def trading_url(path)
-        "#{CrowdFungible.config.alpaca_base_url}#{path}"
+        join_api_url(CrowdFungible.config.alpaca_base_url, path, version_prefix: TRADING_API_VERSION_PREFIX)
       end
 
       def market_data_url(path)
-        "#{CrowdFungible.config.alpaca_market_data_url}#{path}"
+        join_api_url(CrowdFungible.config.alpaca_market_data_url, path)
+      end
+
+      def join_api_url(base_url, path, version_prefix: nil)
+        normalized_base = base_url.to_s.sub(%r{/\z}, "")
+        normalized_path = "/#{path.to_s.sub(%r{\A/+}, "")}"
+
+        if version_prefix && normalized_base.end_with?(version_prefix) && normalized_path.start_with?(version_prefix)
+          normalized_path = normalized_path.delete_prefix(version_prefix)
+        end
+
+        "#{normalized_base}#{normalized_path}"
       end
 
       def ensure_paper_endpoint!
-        return if CrowdFungible.config.alpaca_base_url.to_s.include?("paper-api")
+        trading_uri = URI.parse(CrowdFungible.config.alpaca_base_url.to_s)
+        return if trading_uri.host&.include?("paper-api.alpaca.markets")
 
         raise CrowdFungible::BrokerError, "Order placement is restricted to Alpaca paper trading endpoints"
+      rescue URI::InvalidURIError
+        raise CrowdFungible::BrokerError, "Alpaca trading endpoint is invalid"
       end
     end
   end

@@ -30,10 +30,30 @@ class TradeRequestsFlowTest < ActionDispatch::IntegrationTest
     assert_match "Executed", response.body
   end
 
+  test "company name request resolves through the workflow" do
+    post trade_requests_path, params: {
+      trade_request: {
+        request_text: "Buy 2 shares of Apple",
+        order_type: "market",
+        submitted_by: "demo@example.com"
+      }
+    }
+
+    trade_request = TradeRequest.order(:created_at).last
+
+    assert_redirected_to trade_request_path(trade_request)
+    assert trade_request.rubot_run_id.present?
+
+    follow_redirect!
+    assert_response :success
+    assert_match "AAPL", response.body
+    assert_match "Executed", response.body
+  end
+
   test "result page renders queued approval state" do
     post trade_requests_path, params: {
       trade_request: {
-        request_text: "Put $5000 into NVDA",
+        request_text: "Put $25000 into NVDA",
         order_type: "market",
         submitted_by: "demo@example.com"
       }

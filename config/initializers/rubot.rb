@@ -9,3 +9,12 @@ Rubot.configure do |config|
   # available as a lightweight alternative.
   config.store = Rubot::Stores::ActiveRecordStore.new
 end
+
+Rails.application.config.to_prepare do
+  if Rails.env.development?
+    Rubot.configure do |config|
+      config.provider = CrowdFungible::RubotProviders::GeminiCli.new
+      config.default_model = ENV["CROWD_FUNGIBLE_GEMINI_MODEL"].presence || "gemini-3-flash-preview"
+    end
+  end
+end

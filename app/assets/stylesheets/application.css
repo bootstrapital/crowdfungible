@@ -81,6 +81,22 @@ a {
   background: rgba(15, 118, 110, 0.08);
 }
 
+.site-footer {
+  margin-top: 28px;
+  padding: 12px 4px 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.site-footer p {
+  margin: 0;
+}
+
+.site-footer a {
+  color: var(--accent);
+}
+
 .hero {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
@@ -93,6 +109,11 @@ a {
 .history-table-wrap {
   border-radius: 24px;
   padding: 24px;
+}
+
+.panel--centered {
+  max-width: 760px;
+  margin: 0 auto;
 }
 
 .eyebrow {
@@ -168,11 +189,25 @@ textarea {
   font-size: 0.85rem;
 }
 
+.helper-text--centered {
+  text-align: center;
+  max-width: 34rem;
+  margin: 0 auto;
+}
+
+.trade-request-input {
+  min-height: 144px;
+}
+
 .actions {
   display: flex;
   gap: 12px;
   align-items: center;
   margin-top: 20px;
+}
+
+.actions--centered {
+  justify-content: center;
 }
 
 .button,

@@ -38,6 +38,7 @@ bundle exec rails server
 
 ### CrowdFungible
 
+- Primary policy config: `config/crowd_fungible_policy.yml`
 - `CROWDFUNGIBLE_BROKER_MODE`
   Development and test default to `fake`. Set to `alpaca` for live paper-trading calls.
 - `ALPACA_API_KEY`
@@ -47,13 +48,13 @@ bundle exec rails server
 - `ALPACA_MARKET_DATA_URL`
   Defaults to `https://data.alpaca.markets`
 - `CROWDFUNGIBLE_AUTO_APPROVAL_NOTIONAL_THRESHOLD`
-  Defaults to `1000`
+  Overrides `config/crowd_fungible_policy.yml`
 - `CROWDFUNGIBLE_CONCENTRATION_THRESHOLD`
-  Defaults to `0.25`
+  Overrides `config/crowd_fungible_policy.yml`
 - `CROWDFUNGIBLE_LOW_BUYING_POWER_THRESHOLD`
-  Defaults to `1000`
+  Overrides `config/crowd_fungible_policy.yml`
 - `CROWDFUNGIBLE_SYMBOL_ALLOWLIST`
-  Defaults to `AAPL,AMZN,GOOGL,META,MSFT,NVDA,TSLA`
+  Overrides `config/crowd_fungible_policy.yml`
 
 ## Demo Scenarios
 

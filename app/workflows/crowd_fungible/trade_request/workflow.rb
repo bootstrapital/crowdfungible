@@ -18,6 +18,16 @@ module CrowdFungible
                  },
                  save_as: :normalized_request
 
+      tool_step :resolve_company_symbol,
+                tool: CrowdFungible::TradeRequest::ResolveCompanySymbolTool,
+                input: lambda { |input, state, _context|
+                  {
+                    request_text: input[:request_text],
+                    normalized_request: state.fetch(:normalized_request).fetch(:normalized_request)
+                  }
+                },
+                save_as: :resolved_request
+
       tool_step :lookup_account,
                 tool: CrowdFungible::TradeRequest::LookupAccountTool
 
@@ -31,13 +41,13 @@ module CrowdFungible
 
       tool_step :lookup_quote,
                 tool: CrowdFungible::TradeRequest::LookupQuoteTool,
-                input: ->(_input, state, _context) { { normalized_request: state.fetch(:normalized_request).fetch(:normalized_request) } }
+                input: ->(_input, state, _context) { { normalized_request: CrowdFungible::TradeRequest::Workflow.resolved_request(state) } }
 
       tool_step :estimate_order_impact,
                 tool: CrowdFungible::TradeRequest::EstimateOrderImpactTool,
                 input: lambda { |_input, state, _context|
                   {
-                    normalized_request: state.fetch(:normalized_request).fetch(:normalized_request),
+                    normalized_request: CrowdFungible::TradeRequest::Workflow.resolved_request(state),
                     account: state.fetch(:lookup_account),
                     positions: state.fetch(:lookup_positions).fetch(:positions),
                     quote: state.fetch(:lookup_quote)
@@ -48,7 +58,7 @@ module CrowdFungible
                 tool: CrowdFungible::TradeRequest::EvaluateTradePolicyTool,
                 input: lambda { |_input, state, _context|
                   {
-                    normalized_request: state.fetch(:normalized_request).fetch(:normalized_request),
+                    normalized_request: CrowdFungible::TradeRequest::Workflow.resolved_request(state),
                     account: state.fetch(:lookup_account),
                     positions: state.fetch(:lookup_positions).fetch(:positions),
                     open_orders: state.fetch(:lookup_open_orders).fetch(:open_orders),
@@ -60,10 +70,10 @@ module CrowdFungible
       agent_step :review_request,
                  agent: CrowdFungible::TradeRequest::ReviewAgent,
                  input: lambda { |input, state, _context|
-                   {
+                  {
                      task: "review",
                      request_text: input[:request_text],
-                     normalized_request: state.fetch(:normalized_request).fetch(:normalized_request),
+                     normalized_request: CrowdFungible::TradeRequest::Workflow.resolved_request(state),
                      account: state.fetch(:lookup_account),
                      positions: state.fetch(:lookup_positions).fetch(:positions),
                      open_orders: state.fetch(:lookup_open_orders).fetch(:open_orders),
@@ -88,7 +98,7 @@ module CrowdFungible
                 tool: CrowdFungible::TradeRequest::PlacePaperOrderTool,
                 input: lambda { |_input, state, _context|
                   {
-                    normalized_request: state.fetch(:normalized_request).fetch(:normalized_request),
+                    normalized_request: CrowdFungible::TradeRequest::Workflow.resolved_request(state),
                     policy: state.fetch(:evaluate_trade_policy).merge(decision: "execute")
                   }
                 },
@@ -115,7 +125,7 @@ module CrowdFungible
 
       def prepare_approval_packet
         run.state[:approval_packet] = {
-          normalized_request: run.state.fetch(:normalized_request).fetch(:normalized_request),
+          normalized_request: resolved_request(run.state),
           policy: run.state.fetch(:evaluate_trade_policy),
           impact: run.state.fetch(:estimate_order_impact),
           recommendation: run.state.fetch(:review_request)
@@ -145,7 +155,7 @@ module CrowdFungible
       def finalize_result
         run.state[:finalize_result] = {
           original_request: run.input.slice(:request_text, :side, :symbol, :quantity, :notional_usd, :order_type, :submitted_by),
-          normalized_request: run.state.fetch(:normalized_request).fetch(:normalized_request),
+          normalized_request: resolved_request(run.state),
           account_summary: run.state.fetch(:lookup_account),
           quote_summary: run.state.fetch(:lookup_quote),
           policy_result: run.state.fetch(:evaluate_trade_policy),
@@ -171,7 +181,15 @@ module CrowdFungible
       end
 
       def unresolved_ambiguity?
-        Array(run.state.fetch(:normalized_request).fetch(:normalized_request)[:ambiguity_flags]).any?
+        Array(resolved_request(run.state)[:ambiguity_flags]).any?
+      end
+
+      def self.resolved_request(state)
+        state[:resolved_request].presence || state.fetch(:normalized_request).fetch(:normalized_request)
+      end
+
+      def resolved_request(state)
+        self.class.resolved_request(state)
       end
     end
   end
